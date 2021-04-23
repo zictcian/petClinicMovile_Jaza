@@ -1,5 +1,21 @@
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
+
 import '../bloc/cart_items_bloc.dart';
 import 'package:flutter/material.dart';
+
+Future<String> _read() async {
+  String text;
+  try {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final File file = File('${directory.path}/token.txt');
+    text = await file.readAsString();
+  } catch (e) {
+    print("Couldn't read file");
+  }
+  return text;
+}
 
 class ShopItems extends StatelessWidget {
   Widget build(BuildContext context) {
@@ -8,9 +24,17 @@ class ShopItems extends StatelessWidget {
         title: Text('PetClinic Compras'),
         actions: <Widget>[
           IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              bloc.estadoInicial();
+            },
+            //() => Navigator.pushNamed(context, '/checkout');
+          ),
+          IconButton(
             icon: Icon(Icons.shopping_bag_sharp),
             onPressed: () => Navigator.pushNamed(context, '/checkout'),
-          )
+            //() => Navigator.pushNamed(context, '/checkout');
+          ),
         ],
       ),
       body: ShopItemsWidget(),
