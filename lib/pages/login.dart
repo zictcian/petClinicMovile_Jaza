@@ -1,8 +1,75 @@
+import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_application_1/bloc/cart_items_bloc.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+final userController = TextEditingController();
+final passController = TextEditingController();
+
+var fail = 0;
+
+Future<String> get _localPath async {
+  final directory = await getApplicationDocumentsDirectory();
+
+  return directory.path;
+}
+
+Future<File> get _localFile async {
+  final path = await _localPath;
+  return File('$path/token.txt');
+}
+
+_write(String text) async {
+  final Directory directory = await getApplicationDocumentsDirectory();
+  final File file = File('${directory.path}/token.txt');
+  await file.writeAsString(text);
+  print(text);
+}
+
+Future<String> _read() async {
+  String text;
+  try {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final File file = File('${directory.path}/token.txt');
+    text = await file.readAsString();
+  } catch (e) {
+    print("Couldn't read file");
+  }
+  return text;
+}
+
+_fetchVet() async {
+  fail = 0;
+  Map<String, String> body = {
+    'user': '${userController.text}',
+    'password': '${passController.text}'
+  };
+  var headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+  var request =
+      http.Request('POST', Uri.parse('http://192.168.56.1:19000/user'));
+  request.bodyFields = body;
+  request.headers.addAll(headers);
+
+  http.StreamedResponse response = await request.send();
+  if (response.statusCode == 200) {
+    var izzi = await response.stream.bytesToString();
+    var aux = izzi.split(':');
+    var aux2 = aux[3].split(',');
+    print(response.reasonPhrase);
+    if (aux2[0] != "null") {
+      _write(aux2[0]);
+      print(response.statusCode);
+      fail = 1;
+    }
+  }
+}
 
 class Login extends StatelessWidget {
-  var fail = 0;
   final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -69,7 +136,13 @@ class Login extends StatelessWidget {
                         width: double.infinity,
                         child: RaisedButton(
                           elevation: 5.0,
-                          onPressed: () => Navigator.pushNamed(context, '/'),
+                          onPressed: () async {
+                            await _fetchVet();
+                            if (fail == 1) {
+                              await bloc.estadoInicial();
+                              Navigator.pushNamed(context, '/');
+                            }
+                          },
                           padding: EdgeInsets.all(15.0),
                           color: Color.fromRGBO(48, 194, 139, 1.0),
                           child: Text(
@@ -171,6 +244,7 @@ class Login extends StatelessWidget {
           alignment: Alignment.centerLeft,
           height: 60.0,
           child: TextField(
+            controller: userController,
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(
               color: Colors.black,
@@ -204,6 +278,7 @@ class Login extends StatelessWidget {
           alignment: Alignment.centerLeft,
           height: 60.0,
           child: TextField(
+            controller: passController,
             obscureText: true,
             style: TextStyle(
               color: Colors.black,

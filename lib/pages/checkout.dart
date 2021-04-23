@@ -9,7 +9,10 @@ class Checkout extends StatelessWidget {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.check),
-            onPressed: () => Navigator.pushNamed(context, '/checkout'),
+            onPressed: () async {
+              await bloc.orden();
+              Navigator.pushNamed(context, '/');
+            },
           )
         ],
       ),
